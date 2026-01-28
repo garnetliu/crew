@@ -28,7 +28,7 @@ docs/EVAL.md        (new)
 
 ### Git SHA
 ```
-<pending commit>
+decafbc
 ```
 
 ### Next Steps
