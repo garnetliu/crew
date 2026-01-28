@@ -1,0 +1,403 @@
+# crew - Architecture Document
+
+**Version**: 0.1.0
+**Last Updated**: 2026-01-28
+
+---
+
+## 1. System Overview
+
+crew is a Bash-based multi-agent orchestration system with two operational modes:
+
+```
+                          ┌─────────────────────────────────────┐
+                          │              crew                    │
+                          │    Multi-Agent Orchestration Tool    │
+                          └─────────────────────────────────────┘
+                                          │
+                    ┌─────────────────────┴─────────────────────┐
+                    │                                           │
+           ┌────────▼────────┐                        ┌─────────▼────────┐
+           │   Design Mode    │                        │    Crew Mode     │
+           │  (design.sh)     │                        │   (crew.sh)      │
+           │                  │                        │                  │
+           │  Cross-Review    │                        │  Parallel Agents │
+           │  Writer ⇄ Review │                        │  + Watchdog      │
+           └──────────────────┘                        └──────────────────┘
+```
+
+---
+
+## 2. Component Architecture
+
+### 2.1 Entry Points
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                         Entry Points                              │
+├────────────────────────────┬─────────────────────────────────────┤
+│         design.sh          │             crew.sh                  │
+│                            │                                      │
+│  Commands:                 │  Commands:                           │
+│  - init <idea>             │  - init                              │
+│  - review                  │  - start [AGENT...]                  │
+│  - status                  │  - stop [AGENT...]                   │
+│  - reset                   │  - restart [AGENT...]                │
+│                            │  - status                            │
+│                            │  - monitor                           │
+│                            │  - logs <AGENT>                      │
+│                            │  - validate                          │
+└────────────────────────────┴─────────────────────────────────────┘
+```
+
+### 2.2 Library Modules
+
+```
+lib/
+├── utils.sh          ─────────────────────────────────────────────┐
+│   Core utilities: logging, colors, file hashing, prompts         │
+│   Used by: ALL modules                                           │
+├──────────────────────────────────────────────────────────────────┤
+├── config.sh         ─────────────────────────────────────────────┐
+│   YAML parsing: yq primary, Python fallback                      │
+│   Functions: parse_yaml, config_get, validate_config             │
+│   Used by: orchestrator.sh, watchdog.sh, status.sh               │
+├──────────────────────────────────────────────────────────────────┤
+├── orchestrator.sh   ─────────────────────────────────────────────┐
+│   Cross-review engine: loop control, termination detection       │
+│   Functions: cross_review_loop, parse_review_decision,           │
+│              detect_conflict, design_init, design_status         │
+│   Used by: design.sh                                             │
+├──────────────────────────────────────────────────────────────────┤
+├── watchdog.sh       ─────────────────────────────────────────────┐
+│   Agent lifecycle: start, stop, health checks, auto-restart      │
+│   Functions: start_agent, stop_agent, is_agent_running,          │
+│              restart_agent, watchdog_loop                        │
+│   Used by: crew.sh, status.sh                                    │
+├──────────────────────────────────────────────────────────────────┤
+├── agent_runner.sh   ─────────────────────────────────────────────┐
+│   CLI abstraction: unified interface for multiple AI CLIs        │
+│   Functions: agent_runner, run_claude, run_opencode, run_gemini  │
+│   Used by: orchestrator.sh                                       │
+├──────────────────────────────────────────────────────────────────┤
+└── status.sh         ─────────────────────────────────────────────┐
+    Display: status tables, real-time monitor, log tailing          │
+    Functions: show_status, monitor_loop, tail_agent_log            │
+    Used by: crew.sh                                                │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### 2.3 Dependency Graph
+
+```
+                    ┌─────────────┐
+                    │  utils.sh   │ ← Foundation (no dependencies)
+                    └──────┬──────┘
+                           │
+              ┌────────────┼────────────┐
+              │            │            │
+        ┌─────▼─────┐ ┌────▼────┐ ┌─────▼─────┐
+        │ config.sh │ │ (other) │ │ (other)   │
+        └─────┬─────┘ └─────────┘ └───────────┘
+              │
+    ┌─────────┼─────────────────┐
+    │         │                 │
+┌───▼────┐ ┌──▼──────────┐ ┌────▼──────┐
+│watchdog│ │agent_runner │ │  status   │
+└───┬────┘ └──────┬──────┘ └─────┬─────┘
+    │             │              │
+    │      ┌──────▼──────┐       │
+    │      │orchestrator │       │
+    │      └─────────────┘       │
+    │                            │
+┌───▼────────────────────────────▼───┐
+│              Entry Points           │
+│     design.sh         crew.sh      │
+└────────────────────────────────────┘
+```
+
+---
+
+## 3. Data Flow
+
+### 3.1 Design Mode: Cross-Review Loop
+
+```
+                              design init "idea"
+                                     │
+                                     ▼
+                          ┌─────────────────────┐
+                          │  Create .design/    │
+                          │  - idea.txt         │
+                          │  - design.yaml      │
+                          └──────────┬──────────┘
+                                     │
+                              design review
+                                     │
+                                     ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                        Cross-Review Loop                            │
+│                                                                     │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐           │
+│  │   Inject    │     │ Plan Writer │     │   Output    │           │
+│  │ - idea.txt  │────▶│   Agent     │────▶│  plan.md    │           │
+│  │ - plan.md   │     │ (via CLI)   │     │             │           │
+│  │ - review.md │     └─────────────┘     └──────┬──────┘           │
+│  └─────────────┘                                │                   │
+│                                                 ▼                   │
+│                                    ┌────────────────────┐           │
+│                                    │  Stale Detection   │           │
+│                                    │  (hash comparison) │           │
+│                                    └─────────┬──────────┘           │
+│                                              │                      │
+│                     ┌────────────────────────┴─────┐                │
+│                     │ stale_count >= threshold?    │                │
+│                     └────────────┬─────────────────┘                │
+│                                  │ No                               │
+│                                  ▼                                  │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐           │
+│  │   Inject    │     │  Reviewer   │     │   Output    │           │
+│  │ - plan.md   │────▶│   Agent     │────▶│  review.md  │           │
+│  │             │     │ (via CLI)   │     │             │           │
+│  └─────────────┘     └─────────────┘     └──────┬──────┘           │
+│                                                 │                   │
+│                                                 ▼                   │
+│                              ┌─────────────────────────┐            │
+│                              │  Parse Decision         │            │
+│                              │  (grep "PASS: true")    │            │
+│                              └────────────┬────────────┘            │
+│                                           │                         │
+│                    ┌──────────────────────┼──────────────────────┐  │
+│                    │                      │                      │  │
+│              ┌─────▼─────┐          ┌─────▼─────┐          ┌─────▼──│
+│              │   PASS    │          │   FAIL    │          │CONFLICT│
+│              │  Exit 0   │          │  Continue │          │ Exit 3 │
+│              └───────────┘          │   Loop    │          └────────│
+│                                     └─────┬─────┘                   │
+│                                           │                         │
+│                                           └──────────▶ (next iter)  │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.2 Crew Mode: Parallel Agent Execution
+
+```
+                               crew init
+                                   │
+                                   ▼
+                        ┌──────────────────────┐
+                        │   Create .crew/      │
+                        │   - crew.yaml        │
+                        │   - prompts/         │
+                        │   - logs/            │
+                        │   - run/             │
+                        └──────────┬───────────┘
+                                   │
+                            crew start [AGENTS]
+                                   │
+                                   ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                         Crew Execution                            │
+│                                                                   │
+│   ┌─────────────────────────────────────────────────────────┐    │
+│   │                    Watchdog Loop                         │    │
+│   │              (every check_interval seconds)              │    │
+│   │                                                          │    │
+│   │  for each agent:                                         │    │
+│   │    status = get_agent_status()                           │    │
+│   │    if status == "stale":  → cleanup + restart            │    │
+│   │    if status == "stopped": → start                       │    │
+│   │    if status == "running": → OK                          │    │
+│   └─────────────────────────────────────────────────────────┘    │
+│                                                                   │
+│         ┌──────────┐    ┌──────────┐    ┌──────────┐             │
+│         │    QA    │    │   DEV    │    │ JANITOR  │             │
+│         │  Agent   │    │  Agent   │    │  Agent   │             │
+│         └────┬─────┘    └────┬─────┘    └────┬─────┘             │
+│              │               │               │                    │
+│         ┌────▼─────┐    ┌────▼─────┐    ┌────▼─────┐             │
+│         │ .pid file│    │ .pid file│    │ .pid file│             │
+│         │ .log file│    │ .log file│    │ .log file│             │
+│         └──────────┘    └──────────┘    └──────────┘             │
+│                                                                   │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 4. File System Layout
+
+### 4.1 Installation Directory
+
+```
+~/dev/crew/                    # CREW_HOME
+├── crew.sh                    # Crew mode entry
+├── design.sh                  # Design mode entry
+├── install.sh                 # Installation script
+├── lib/
+│   ├── utils.sh
+│   ├── config.sh
+│   ├── orchestrator.sh
+│   ├── watchdog.sh
+│   ├── agent_runner.sh
+│   └── status.sh
+├── prompts/
+│   └── cross-review/
+│       ├── plan_writer.md     # Default Writer prompt
+│       └── reviewer.md        # Default Reviewer prompt
+└── docs/
+    ├── PRD.md
+    ├── ARCHITECTURE.md
+    ├── TASKS.md
+    ├── SESSION_LOG.md
+    └── EVAL.md
+```
+
+### 4.2 Project Working Directory (.design/)
+
+```
+<project>/
+└── .design/
+    ├── design.yaml            # Session configuration
+    ├── idea.txt               # User's initial idea
+    ├── plan.md                # Current plan (Writer output)
+    ├── review.md              # Current review (Reviewer output)
+    ├── history/
+    │   ├── plan_v1.md
+    │   ├── review_v1.md
+    │   ├── plan_v2.md
+    │   └── review_v2.md
+    └── prompts/               # Optional custom prompts
+        ├── plan_writer.md
+        └── reviewer.md
+```
+
+### 4.3 Project Working Directory (.crew/)
+
+```
+<project>/
+└── .crew/
+    ├── crew.yaml              # Agent configuration
+    ├── prompts/
+    │   ├── qa.txt
+    │   ├── dev.txt
+    │   └── janitor.txt
+    ├── logs/
+    │   ├── QA.log
+    │   ├── DEV.log
+    │   └── JANITOR.log
+    └── run/
+        ├── QA.pid
+        ├── DEV.pid
+        └── JANITOR.pid
+```
+
+---
+
+## 5. Key Algorithms
+
+### 5.1 Termination Detection
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Termination Conditions                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. PASS (exit 0)                                               │
+│     ─────────────                                                │
+│     review.md contains "PASS: true" (case-insensitive)          │
+│                                                                  │
+│  2. STALE (exit 2)                                              │
+│     ────────────                                                 │
+│     plan.md hash unchanged for stale_threshold iterations       │
+│     Default: 2 consecutive identical hashes                      │
+│                                                                  │
+│  3. CONFLICT (exit 3)                                           │
+│     ─────────────                                                │
+│     Same issue titles appear conflict_threshold times           │
+│     Detection: grep "### [CATEGORY]:" from last N reviews       │
+│     Default: 3 repeated issues                                   │
+│                                                                  │
+│  4. MAX_ITER (exit 1)                                           │
+│     ─────────────                                                │
+│     Loop count >= max_iterations config value                    │
+│     Default: 5 iterations                                        │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 Agent Health Check
+
+```bash
+get_agent_status():
+    if PID file does not exist:
+        return "stopped"
+
+    pid = read PID file
+
+    if kill -0 $pid succeeds:
+        return "running:$pid"
+    else:
+        return "stale"  # PID file exists but process dead
+```
+
+### 5.3 Graceful Shutdown
+
+```
+stop_agent(name):
+    1. Remove PID file (signals loop to stop on next iteration)
+    2. Send SIGTERM to process
+    3. Wait up to 10 seconds for exit
+    4. If still alive, send SIGKILL
+```
+
+---
+
+## 6. Extension Points
+
+### 6.1 Adding a New Agent CLI
+
+```bash
+# In lib/agent_runner.sh:
+
+# 1. Add run function
+run_newagent() {
+  local prompt="$1"
+  local working_dir="$2"
+
+  cd "$working_dir" || return 1
+  echo "$prompt" | newagent --prompt -
+}
+
+# 2. Update agent_runner() case statement
+case "$agent_type" in
+  # ... existing cases ...
+  newagent)
+    run_newagent "$full_prompt" "$working_dir"
+    ;;
+esac
+
+# 3. Update check_agent()
+newagent)
+  command_exists newagent
+  ;;
+```
+
+### 6.2 Custom Prompts
+
+Place custom prompts in `.design/prompts/` or `.crew/prompts/`. They will be used instead of the defaults in `~/dev/crew/prompts/`.
+
+### 6.3 Configuration Override
+
+Environment variables take precedence:
+- `CREW_AGENT` overrides `.agent` in config
+- `DEBUG=1` enables verbose logging
+
+---
+
+## 7. Security Considerations
+
+- **Prompt injection**: User prompts are passed to AI CLIs; validate if exposing to untrusted input
+- **File permissions**: PID/log files created with user's default umask
+- **Process isolation**: Agents run as subprocesses with inherited permissions
+- **No secrets**: Configuration files should not contain secrets; use environment variables

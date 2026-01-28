@@ -1,0 +1,19 @@
+# Agent runtime
+.crew/logs/
+.crew/run/
+.design/history/
+
+# Evaluation files (local only)
+docs/EVAL.md
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+*.swo
+*~
+
+# Local config overrides
+.crew/crew.local.yaml
+.design/design.local.yaml

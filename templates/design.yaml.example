@@ -1,0 +1,18 @@
+# Cross-Review Design Session Configuration
+# Copy to .design/design.yaml in your project
+
+project: my-project
+agent: claude                     # claude, opencode, or gemini
+max_iterations: 5                 # Maximum review cycles
+
+termination:
+  stale_threshold: 2              # Stop if plan unchanged for N iterations
+  conflict_threshold: 3           # Stop if same issue repeats N times
+
+prompts:
+  plan_writer: prompts/plan_writer.md
+  reviewer: prompts/reviewer.md
+
+history:
+  enabled: true                   # Save each iteration
+  dir: history/

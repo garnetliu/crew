@@ -1,0 +1,37 @@
+# Crew Configuration - Parallel Agents
+# Copy to .crew/crew.yaml in your project
+
+project: my-project
+log_dir: .crew/logs
+check_interval: 30  # Health check interval (seconds)
+
+agents:
+  - name: QA
+    icon: 🔴
+    command: claude --dangerously-skip-permissions
+    prompt: prompts/qa.txt
+    interval: 10       # Seconds between runs
+    timeout: 600       # Kill if no output for this long
+    working_dirs:      # Advisory: only modify files in these dirs
+      - e2e/
+      - server/src/__tests__/
+
+  - name: DEV
+    icon: 🔵
+    command: claude --dangerously-skip-permissions
+    prompt: prompts/dev.txt
+    interval: 10
+    timeout: 600
+    working_dirs:
+      - server/src/
+      - client/src/
+
+  - name: JANITOR
+    icon: 🟢
+    command: claude --dangerously-skip-permissions
+    prompt: prompts/janitor.txt
+    interval: 10
+    timeout: 600
+    working_dirs:
+      - docs/
+      - "*.md"
