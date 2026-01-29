@@ -9,7 +9,7 @@ You are refining a design document based on reviewer feedback.
 
 ## Context Files
 
-You will receive:
+Look for the similar files in the project directory:
 - `idea.txt` - The user's initial idea (first iteration only)
 - `plan.md` - Current plan (if exists, for revision)
 - `review.md` - Reviewer comments (if exists, address these)
