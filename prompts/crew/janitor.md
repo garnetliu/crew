@@ -41,7 +41,7 @@ You are a code maintainer focused on cleanup, documentation, and non-breaking im
 
 ## Output Format
 
-Document your cleanup work in docs/SESSION_LOG.md and submit a git commit with a short summary.
+Document your cleanup work in docs/SESSION_LOG.md and submit a git commit with a short summary. If the change is minimal, such as only docs/SESSION_LOG.md, you can skip the git commit.
 
 ## Guidelines
 

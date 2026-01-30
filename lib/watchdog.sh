@@ -14,7 +14,8 @@ start_agent() {
   local name="$1"
   local command="$2"
   local prompt_file="$3"
-  local working_dir="${4:-$PWD}"
+  local interval="${4:-$DEFAULT_RESTART_DELAY}"
+  local working_dir="${5:-$PWD}"
   local crew_dir=".crew"
   
   ensure_dir "$crew_dir/logs"
@@ -29,7 +30,7 @@ start_agent() {
     return 1
   fi
   
-  log_info "[$name] Starting..."
+  log_info "[$name] Starting (restart delay: ${interval}s)..."
   
   # Build the full command
   local full_prompt
@@ -45,9 +46,9 @@ start_agent() {
     cd "$working_dir" || exit 1
     while true; do
       echo "[$name] Starting at $(timestamp)" >> "$log_file"
-      
-      # Run the agent command
-      echo "$full_prompt" | $command >> "$log_file" 2>&1
+      # Run the agent command (use eval to support inline env vars like VAR=value cmd)
+      # Use input redirection from file instead of pipe for reliability
+      eval "$command" < "$prompt_file" >> "$log_file" 2>&1
       local exit_code=$?
       
       echo "[$name] Exited with code $exit_code at $(timestamp)" >> "$log_file"
@@ -59,8 +60,8 @@ start_agent() {
       fi
       
       # Wait before restart
-      echo "[$name] Restarting in ${DEFAULT_RESTART_DELAY}s..." >> "$log_file"
-      sleep "$DEFAULT_RESTART_DELAY"
+      echo "[$name] Restarting in ${interval}s..." >> "$log_file"
+      sleep "$interval"
     done
   ) &
   
@@ -154,12 +155,13 @@ restart_agent() {
   sleep 1
   
   # Get agent config and restart
-  local command prompt_file
+  local command prompt_file interval
   command=$(config_get ".agents[] | select(.name == \"$name\") | .command" "" "$config_file")
   prompt_file=$(config_get ".agents[] | select(.name == \"$name\") | .prompt" "" "$config_file")
+  interval=$(config_get ".agents[] | select(.name == \"$name\") | .interval" "$DEFAULT_RESTART_DELAY" "$config_file")
   
   if [[ -n "$command" && -n "$prompt_file" ]]; then
-    start_agent "$name" "$command" "$prompt_file"
+    start_agent "$name" "$command" ".crew/$prompt_file" "$interval" || true
   else
     log_error "[$name] Cannot restart: missing config"
   fi
@@ -178,17 +180,19 @@ start_all_agents() {
   local agents
   agents=$(config_get ".agents[].name" "" "$config_file")
   
-  for name in $agents; do
-    local command prompt_file
+  while IFS= read -r name; do
+    [[ -z "$name" ]] && continue
+    local command prompt_file interval
     command=$(config_get ".agents[] | select(.name == \"$name\") | .command" "" "$config_file")
     prompt_file=$(config_get ".agents[] | select(.name == \"$name\") | .prompt" "" "$config_file")
+    interval=$(config_get ".agents[] | select(.name == \"$name\") | .interval" "$DEFAULT_RESTART_DELAY" "$config_file")
     
     if [[ -n "$command" && -n "$prompt_file" ]]; then
-      start_agent "$name" "$command" "$prompt_file"
+      start_agent "$name" "$command" ".crew/$prompt_file" "$interval" || true
     else
       log_warn "[$name] Skipping: missing command or prompt"
     fi
-  done
+  done <<< "$agents"
 }
 
 # Stop all agents

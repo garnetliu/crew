@@ -56,6 +56,12 @@ ${BOLD}EXAMPLES${NC}
   # Start specific agents
   crew start QA DEV
 
+  # Restart all agents
+  crew restart
+
+  # Restart specific agent
+  crew restart JANITOR
+
   # Monitor in real-time
   crew monitor
 
@@ -159,13 +165,14 @@ crew_start() {
       local command prompt_file
       command=$(config_get ".agents[] | select(.name == \"$name\") | .command" "" "$CONFIG_FILE")
       prompt_file=$(config_get ".agents[] | select(.name == \"$name\") | .prompt" "" "$CONFIG_FILE")
+      interval=$(config_get ".agents[] | select(.name == \"$name\") | .interval" "$DEFAULT_RESTART_DELAY" "$CONFIG_FILE")
       
       if [[ -z "$command" ]]; then
         log_error "[$name] Not found in config"
         continue
       fi
       
-      start_agent "$name" "$command" "$CREW_DIR/$prompt_file"
+      start_agent "$name" "$command" "$CREW_DIR/$prompt_file" "$interval" || true
     done
   fi
 }

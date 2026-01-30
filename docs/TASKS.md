@@ -165,6 +165,30 @@
 - [ ] Validate agent commands are executable
 - [ ] Show helpful errors for misconfigurations
 
+### T025: Add `crew edit` command [S] - 🔍 From Review
+- [ ] Add `edit` case to crew.sh main dispatch
+- [ ] Open `$CREW_DIR/prompts/<agent>.md` in `$EDITOR`
+- [ ] Fall back to `vi` if `$EDITOR` not set
+- [ ] Add usage to help text
+
+### T026: Add JSON config fallback [S] - 🔍 From Review
+- [ ] Update lib/config.sh to support `.crew/crew.json`
+- [ ] Use Python's built-in `json` module (no pip needed)
+- [ ] Try yq first, then JSON fallback
+- [ ] Document in README
+
+### T027: Add `working_dirs` advisory field [S] - 🔍 From Review
+- [ ] Add `working_dirs` to default crew.yaml template
+- [ ] Include in QA/DEV/JANITOR examples to show pattern
+- [ ] Document as advisory (not enforced) in README
+- [ ] Note: Phase 2 will add flock-based enforcement
+
+### T028: Support `env` dictionary in config [S] - 🔍 From Feedback
+- [ ] Update `lib/watchdog.sh` to read `env` map
+- [ ] Export variables before running agent command
+- [ ] Allow cleaner `crew.yaml` without inline env vars
+- [ ] Support secret expansion (e.g. `$ENV_VAR`)
+
 ---
 
 ## P5: Improvements
@@ -211,7 +235,12 @@
 ### D004: Prompt file validation [S]
 - Location: `lib/orchestrator.sh:72`
 - Issue: Missing prompt file causes cryptic error
-- Fix: Early validation with helpful message
+- [ ] Fix: Early validation with helpful message
+
+### D005: Inline env vars in command [M]
+- Location: `crew.yaml` (user config)
+- Issue: Users must put env vars in `command` string
+- Fix: Implement T028 (`env` field) and migrate configs
 
 ---
 
@@ -227,3 +256,7 @@
 - [x] SESSION_LOG.md checkpoint log - 2026-01-28
 - [x] Code review (docs/EVAL.md) - 2026-01-28
 - [x] Create .gitignore - 2026-01-28
+- [x] Verify deployment in ai-judge - 2026-01-28
+- [x] Fix critical bug: Multi-line config parsing - 2026-01-28
+- [x] Fix critical bug: Prompt path resolution - 2026-01-28
+

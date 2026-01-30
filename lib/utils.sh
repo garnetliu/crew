@@ -41,7 +41,7 @@ get_crew_home() {
 
 # Ensure directory exists
 ensure_dir() {
-  [[ ! -d "$1" ]] && mkdir -p "$1"
+  mkdir -p "$1"
 }
 
 # Check if file is newer than another
