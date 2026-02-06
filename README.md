@@ -1,6 +1,6 @@
 # crew
 
-> Multi-Agent Orchestration Tool for AI-assisted development
+> Adversarial Multi-Agent Orchestration Tool for AI-assisted development
 
 ## Overview
 
