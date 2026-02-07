@@ -50,6 +50,9 @@ cross_review_loop() {
   log_info "Conflict threshold: $conflict_threshold"
   echo ""
   
+  # Cleanup on interrupt
+  trap 'log_info "Design session interrupted."; return 1' INT TERM
+
   # Ensure history directory exists
   ensure_dir "$design_dir/history"
   

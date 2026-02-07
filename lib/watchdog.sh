@@ -245,7 +245,9 @@ watchdog_loop() {
   local check_interval="${2:-$DEFAULT_CHECK_INTERVAL}"
   
   log_info "Watchdog started (interval: ${check_interval}s)"
-  
+
+  trap 'log_info "Watchdog stopping..."; return 0' INT TERM
+
   while true; do
     sleep "$check_interval"
     

@@ -80,6 +80,8 @@ monitor_loop() {
   local config_file="$1"
   local refresh="${2:-2}"
   
+  trap 'echo ""; return 0' INT TERM
+
   while true; do
     clear
     show_status "$config_file"

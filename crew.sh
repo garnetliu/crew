@@ -180,8 +180,17 @@ crew_start() {
     return 1
   fi
   
+  # Cleanup trap: stop all agents on exit/interrupt
+  _crew_cleanup() {
+    local exit_code=$?
+    trap - EXIT INT TERM
+    stop_all_agents 2>/dev/null || true
+    exit "$exit_code"
+  }
+  trap _crew_cleanup EXIT INT TERM
+
   header "Starting Agents"
-  
+
   if [[ ${#agents[@]} -eq 0 ]]; then
     # Start all
     start_all_agents "$CONFIG_FILE"
