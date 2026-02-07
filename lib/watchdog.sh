@@ -8,6 +8,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/config.sh"
 DEFAULT_CHECK_INTERVAL=30
 DEFAULT_TIMEOUT=600
 DEFAULT_RESTART_DELAY=5
+DEFAULT_MAX_RESTARTS=5
+MAX_BACKOFF_DELAY=300
+GRACEFUL_SHUTDOWN_TIMEOUT=10
 
 # Export per-agent env vars from config
 # Usage: export_agent_env <name> <config_file>
@@ -68,6 +71,8 @@ start_agent() {
     export_agent_env "$name" "$config_file"
 
     cd "$working_dir" || exit 1
+    local restart_count=0
+    local delay="$interval"
     while true; do
       echo "[$name] Starting at $(timestamp)" >> "$log_file"
       # Run command as array (no eval - prevents arbitrary code execution from config)
@@ -84,9 +89,28 @@ start_agent() {
         break
       fi
 
+      if [[ "$exit_code" -eq 0 ]]; then
+        # Normal cycle: reset backoff
+        restart_count=0
+        delay="$interval"
+      else
+        # Error: increment restart count, apply exponential backoff
+        restart_count=$((restart_count + 1))
+        if [[ "$restart_count" -ge "$DEFAULT_MAX_RESTARTS" ]]; then
+          echo "[$name] Max restarts ($DEFAULT_MAX_RESTARTS) reached. Giving up." >> "$log_file"
+          break
+        fi
+        # Exponential backoff: interval * 2^(n-1), capped at MAX_BACKOFF_DELAY
+        delay=$((interval * (1 << (restart_count - 1))))
+        if [[ "$delay" -gt "$MAX_BACKOFF_DELAY" ]]; then
+          delay="$MAX_BACKOFF_DELAY"
+        fi
+        echo "[$name] Error restart $restart_count/$DEFAULT_MAX_RESTARTS (backoff: ${delay}s)" >> "$log_file"
+      fi
+
       # Wait before restart
-      echo "[$name] Restarting in ${interval}s..." >> "$log_file"
-      sleep "$interval"
+      echo "[$name] Restarting in ${delay}s..." >> "$log_file"
+      sleep "$delay"
     done
   ) &
 
@@ -118,9 +142,9 @@ stop_agent() {
   
   # Send SIGTERM for graceful shutdown
   if kill -TERM "$pid" 2>/dev/null; then
-    # Wait up to 10 seconds for graceful exit
+    # Wait for graceful exit
     local wait_count=0
-    while kill -0 "$pid" 2>/dev/null && [[ $wait_count -lt 10 ]]; do
+    while kill -0 "$pid" 2>/dev/null && [[ $wait_count -lt $GRACEFUL_SHUTDOWN_TIMEOUT ]]; do
       sleep 1
       wait_count=$((wait_count + 1))
     done
