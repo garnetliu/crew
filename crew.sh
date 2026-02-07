@@ -104,25 +104,51 @@ check_interval: 30
 
 agents:
   - name: QA
-    icon: 🔴
+    icon: "\U0001F534"
+    # command must be a simple command (no pipes/shell operators)
+    # For complex commands, use a wrapper script
     command: claude --dangerously-skip-permissions
     prompt: prompts/qa.md
     interval: 10
     timeout: 600
+    # Per-agent environment variables
+    # env:
+    #   ANTHROPIC_BASE_URL: https://api.anthropic.com
+    #   ANTHROPIC_MODEL: claude-sonnet-4-20250514
 
   - name: DEV
-    icon: 🔵
+    icon: "\U0001F535"
     command: claude --dangerously-skip-permissions
     prompt: prompts/dev.md
     interval: 10
     timeout: 600
 
   - name: JANITOR
-    icon: 🟢
+    icon: "\U0001F7E2"
     command: claude --dangerously-skip-permissions
     prompt: prompts/janitor.md
     interval: 10
     timeout: 600
+
+# ──────────────────────────────────────────────
+# 3rd Party / Self-Hosted Model Configuration
+# ──────────────────────────────────────────────
+# To use a different provider (e.g., OpenRouter, self-hosted):
+#
+#   agents:
+#     - name: DEV
+#       command: claude --dangerously-skip-permissions
+#       env:
+#         ANTHROPIC_BASE_URL: https://openrouter.ai/api/v1
+#         ANTHROPIC_MODEL: anthropic/claude-sonnet-4-20250514
+#
+# Supported env vars for Claude CLI:
+#   ANTHROPIC_BASE_URL  - API endpoint URL
+#   ANTHROPIC_MODEL     - Model identifier
+#   ANTHROPIC_API_KEY   - API key (prefer shell env over config file!)
+#
+# WARNING: Do NOT put API keys in this file if it's committed to git.
+# Set ANTHROPIC_API_KEY in your shell environment instead.
 EOF
   log_ok "Created $CONFIG_FILE"
 
@@ -173,7 +199,7 @@ crew_start() {
         continue
       fi
 
-      start_agent "$name" "$command" "$CREW_DIR/$prompt_file" "$interval" || true
+      start_agent "$name" "$command" "$CREW_DIR/$prompt_file" "$interval" "$PWD" "$CONFIG_FILE" || true
     done
   fi
 }

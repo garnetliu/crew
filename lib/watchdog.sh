@@ -9,6 +9,27 @@ DEFAULT_CHECK_INTERVAL=30
 DEFAULT_TIMEOUT=600
 DEFAULT_RESTART_DELAY=5
 
+# Export per-agent env vars from config
+# Usage: export_agent_env <name> <config_file>
+export_agent_env() {
+  local name="$1"
+  local config_file="$2"
+  [[ -z "$config_file" || ! -f "$config_file" ]] && return 0
+
+  local env_keys
+  env_keys=$(config_get ".agents[] | select(.name == \"$name\") | .env | keys | .[]" "" "$config_file")
+  [[ -z "$env_keys" || "$env_keys" == "null" ]] && return 0
+
+  while IFS= read -r key; do
+    [[ -z "$key" ]] && continue
+    local value
+    value=$(config_get ".agents[] | select(.name == \"$name\") | .env.$key" "" "$config_file")
+    if [[ -n "$value" && "$value" != "null" ]]; then
+      export "$key=$value"
+    fi
+  done <<< "$env_keys"
+}
+
 # Start an agent in background with monitoring
 start_agent() {
   local name="$1"
@@ -16,60 +37,62 @@ start_agent() {
   local prompt_file="$3"
   local interval="${4:-$DEFAULT_RESTART_DELAY}"
   local working_dir="${5:-$PWD}"
+  local config_file="${6:-}"
   local crew_dir=".crew"
 
   validate_agent_name "$name" || return 1
 
   ensure_dir "$crew_dir/logs"
   ensure_dir "$crew_dir/run"
-  
+
   local log_file="$crew_dir/logs/${name}.log"
   local pid_file="$crew_dir/run/${name}.pid"
-  
+
   # Check if already running
   if is_agent_running "$name"; then
     log_warn "[$name] Already running (PID: $(cat "$pid_file"))"
     return 1
   fi
-  
+
   log_info "[$name] Starting (restart delay: ${interval}s)..."
-  
-  # Build the full command
-  local full_prompt
-  if [[ -f "$prompt_file" ]]; then
-    full_prompt=$(cat "$prompt_file")
-  else
+
+  # Validate prompt file
+  if [[ ! -f "$prompt_file" ]]; then
     log_error "[$name] Prompt file not found: $prompt_file"
     return 1
   fi
-  
+
   # Start agent in background
   (
+    # Export per-agent env vars (only affects this subshell)
+    export_agent_env "$name" "$config_file"
+
     cd "$working_dir" || exit 1
     while true; do
       echo "[$name] Starting at $(timestamp)" >> "$log_file"
-      # Run the agent command (use eval to support inline env vars like VAR=value cmd)
-      # Use input redirection from file instead of pipe for reliability
-      eval "$command" < "$prompt_file" >> "$log_file" 2>&1
+      # Run command as array (no eval - prevents arbitrary code execution from config)
+      local cmd_array
+      read -ra cmd_array <<< "$command"
+      "${cmd_array[@]}" < "$prompt_file" >> "$log_file" 2>&1
       local exit_code=$?
-      
+
       echo "[$name] Exited with code $exit_code at $(timestamp)" >> "$log_file"
-      
+
       # Check if we should restart
       if [[ ! -f "$pid_file" ]]; then
         echo "[$name] PID file removed, stopping." >> "$log_file"
         break
       fi
-      
+
       # Wait before restart
       echo "[$name] Restarting in ${interval}s..." >> "$log_file"
       sleep "$interval"
     done
   ) &
-  
+
   local pid=$!
   echo "$pid" > "$pid_file"
-  
+
   log_ok "[$name] Started (PID: $pid)"
   log_info "[$name] Log: $log_file"
 }
@@ -163,7 +186,7 @@ restart_agent() {
   interval=$(config_get ".agents[] | select(.name == \"$name\") | .interval" "$DEFAULT_RESTART_DELAY" "$config_file")
   
   if [[ -n "$command" && -n "$prompt_file" ]]; then
-    start_agent "$name" "$command" ".crew/$prompt_file" "$interval" || true
+    start_agent "$name" "$command" ".crew/$prompt_file" "$interval" "$PWD" "$config_file" || true
   else
     log_error "[$name] Cannot restart: missing config"
   fi
@@ -191,7 +214,7 @@ start_all_agents() {
     interval=$(config_get ".agents[] | select(.name == \"$name\") | .interval" "$DEFAULT_RESTART_DELAY" "$config_file")
     
     if [[ -n "$command" && -n "$prompt_file" ]]; then
-      start_agent "$name" "$command" ".crew/$prompt_file" "$interval" || true
+      start_agent "$name" "$command" ".crew/$prompt_file" "$interval" "$PWD" "$config_file" || true
     else
       log_warn "[$name] Skipping: missing command or prompt"
     fi

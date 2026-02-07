@@ -129,11 +129,46 @@ agents:
 └── run/            # PID files
 ```
 
+## 3rd Party / Self-Hosted Models
+
+Use the `env` field in `.crew/crew.yaml` to configure per-agent environment variables for different providers:
+
+```yaml
+agents:
+  - name: DEV
+    command: claude --dangerously-skip-permissions
+    prompt: prompts/dev.md
+    env:
+      ANTHROPIC_BASE_URL: https://openrouter.ai/api/v1
+      ANTHROPIC_MODEL: anthropic/claude-sonnet-4-20250514
+```
+
+### Common Providers
+
+| Provider | `ANTHROPIC_BASE_URL` |
+|----------|---------------------|
+| Anthropic (default) | `https://api.anthropic.com` |
+| OpenRouter | `https://openrouter.ai/api/v1` |
+| Self-hosted | `http://localhost:8080/v1` |
+
+### API Key Handling
+
+> **WARNING**: Never put API keys in `crew.yaml` if it's committed to git.
+
+Set `ANTHROPIC_API_KEY` in your shell environment instead:
+
+```bash
+export ANTHROPIC_API_KEY="sk-..."
+```
+
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
 | `CREW_AGENT` | Override default agent type (claude, opencode, gemini) |
+| `ANTHROPIC_BASE_URL` | Override API endpoint for Claude CLI |
+| `ANTHROPIC_MODEL` | Override model for Claude CLI |
+| `ANTHROPIC_API_KEY` | API key for Claude CLI (set in shell, not config) |
 | `DEBUG` | Set to `1` for verbose output |
 
 ## Examples
