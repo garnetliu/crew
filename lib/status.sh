@@ -6,6 +6,12 @@ source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/config.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/watchdog.sh"
 
+# Constants
+LOG_TRUNCATE_LENGTH=30
+STATUS_TABLE_WIDTH=70
+DEFAULT_MONITOR_REFRESH=2
+DEFAULT_LOG_TAIL_LINES=50
+
 # Show status of all agents
 show_status() {
   local config_file="$1"
@@ -35,7 +41,7 @@ show_status() {
   
   # Print table header
   printf "%-15s %-10s %-10s %-30s\n" "AGENT" "STATUS" "PID" "LAST LOG"
-  separator "-" 70
+  separator "-" "$STATUS_TABLE_WIDTH"
   
   for name in $agents; do
     local status pid_display last_log icon color
@@ -65,7 +71,7 @@ show_status() {
     # Get last log line
     local log_file="$crew_dir/logs/${name}.log"
     if [[ -f "$log_file" ]]; then
-      last_log=$(tail -1 "$log_file" 2>/dev/null | cut -c1-30)
+      last_log=$(tail -1 "$log_file" 2>/dev/null | cut -c1-"$LOG_TRUNCATE_LENGTH")
     else
       last_log="-"
     fi
@@ -79,7 +85,7 @@ show_status() {
 # Real-time monitor (like htop for agents)
 monitor_loop() {
   local config_file="$1"
-  local refresh="${2:-2}"
+  local refresh="${2:-$DEFAULT_MONITOR_REFRESH}"
   
   trap 'echo ""; return 0' INT TERM
 
@@ -95,7 +101,7 @@ monitor_loop() {
 # Tail logs for an agent
 tail_agent_log() {
   local name="$1"
-  local lines="${2:-50}"
+  local lines="${2:-$DEFAULT_LOG_TAIL_LINES}"
   local crew_dir=".crew"
 
   validate_agent_name "$name" || return 1
