@@ -1,5 +1,6 @@
 #!/bin/bash
 # crew/lib/agent_runner.sh - Unified agent interface
+set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/config.sh"
@@ -40,12 +41,12 @@ agent_runner() {
   
   # Build the full prompt with injected context
   local full_prompt
-  full_prompt=$(build_prompt "$prompt_file" "${inject_files[@]}")
+  full_prompt=$(build_prompt "$prompt_file" "${inject_files[@]+"${inject_files[@]}"}")
   
   # Run the appropriate agent
   log_debug "Running agent: $agent_type"
   log_debug "Prompt file: $prompt_file"
-  log_debug "Inject files: ${inject_files[*]}"
+  log_debug "Inject files: ${inject_files[*]:-}"
   
   case "$agent_type" in
     claude)
@@ -100,10 +101,7 @@ run_claude() {
     return 1
   fi
   
-  cd "$working_dir" || return 1
-  
-  # Use --dangerously-skip-permissions for automated workflows
-  echo "$prompt" | claude --dangerously-skip-permissions -p -
+  (cd "$working_dir" && echo "$prompt" | claude --dangerously-skip-permissions -p -)
 }
 
 # Run OpenCode CLI
@@ -116,10 +114,7 @@ run_opencode() {
     return 1
   fi
   
-  cd "$working_dir" || return 1
-  
-  # OpenCode interface (adjust based on actual CLI)
-  echo "$prompt" | opencode --prompt -
+  (cd "$working_dir" && echo "$prompt" | opencode --prompt -)
 }
 
 # Run Gemini CLI
@@ -132,10 +127,7 @@ run_gemini() {
     return 1
   fi
   
-  cd "$working_dir" || return 1
-  
-  # Gemini interface (adjust based on actual CLI)
-  echo "$prompt" | gemini --prompt -
+  (cd "$working_dir" && echo "$prompt" | gemini --prompt -)
 }
 
 # Check if agent is available

@@ -1,5 +1,6 @@
 #!/bin/bash
 # crew/lib/orchestrator.sh - Cross-review orchestration engine
+set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/config.sh"
@@ -157,7 +158,8 @@ parse_review_decision() {
   fi
   
   # Look for "PASS: true" or "**PASS**: true" pattern
-  if grep -qiE '^\*?\*?PASS\*?\*?:\s*(true|yes)' "$review_file"; then
+  # Anchored to reject prefixed words like "NOT PASS" and trailing content
+  if grep -qiE '^\*{0,2}PASS\*{0,2}\s*:\s*(true|yes)\s*$' "$review_file"; then
     echo "pass"
   else
     echo "fail"

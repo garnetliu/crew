@@ -1,5 +1,6 @@
 #!/bin/bash
 # crew/lib/config.sh - Configuration parsing
+set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 
@@ -96,7 +97,7 @@ get_agent_type() {
   local config_file="$1"
   
   # Environment variable takes precedence
-  if [[ -n "$CREW_AGENT" ]]; then
+  if [[ -n "${CREW_AGENT:-}" ]]; then
     echo "$CREW_AGENT"
     return
   fi

@@ -1,5 +1,6 @@
 #!/bin/bash
 # crew/lib/utils.sh - Common utility functions
+set -euo pipefail
 
 # Colors
 RED='\033[0;31m'
@@ -16,7 +17,7 @@ log_info()  { echo -e "${BLUE}ℹ${NC} $1"; }
 log_ok()    { echo -e "${GREEN}✓${NC} $1"; }
 log_warn()  { echo -e "${YELLOW}⚠${NC} $1"; }
 log_error() { echo -e "${RED}✗${NC} $1"; }
-log_debug() { [[ "$DEBUG" == "1" ]] && echo -e "${PURPLE}⚙${NC} $1"; }
+log_debug() { [[ "${DEBUG:-}" == "1" ]] && echo -e "${PURPLE}⚙${NC} $1" || true; }
 
 # Timestamp
 timestamp() { date "+%Y-%m-%d %H:%M:%S"; }

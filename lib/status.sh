@@ -1,5 +1,6 @@
 #!/bin/bash
 # crew/lib/status.sh - Status display and monitoring
+set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/config.sh"

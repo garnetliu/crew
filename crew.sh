@@ -11,7 +11,7 @@
 #   crew logs AGENT      Tail agent logs
 #   crew validate        Check config syntax
 
-set -e
+set -euo pipefail
 
 # Get script directory and source libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

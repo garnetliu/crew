@@ -7,7 +7,7 @@
 #   design status          Show current review status
 #   design reset           Reset to initial state
 
-set -e
+set -euo pipefail
 
 # Get script directory and source libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

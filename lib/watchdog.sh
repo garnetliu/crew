@@ -1,5 +1,6 @@
 #!/bin/bash
 # crew/lib/watchdog.sh - Health monitoring and auto-restart
+set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/utils.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/config.sh"
