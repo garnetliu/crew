@@ -117,6 +117,8 @@ crew monitor
 # View logs
 crew logs QA
 
+> **Tip**: For long-running tasks (like full test suites), log output may appear "stuck" due to buffering. The log will update in a large chunk once the command completes.
+
 # Stop all
 crew stop
 ```

@@ -170,3 +170,66 @@ show_agent_info() {
     tail -5 "$log_file"
   fi
 }
+# Internal helper for recursive process tree
+_print_subtree() {
+  local ppid=$1
+  local indent=$2
+  
+  local children
+  children=$(pgrep -P "$ppid" 2>/dev/null || echo "")
+  
+  for child in $children; do
+    [[ -z "$child" ]] && continue
+    
+    # Get command and arguments
+    local args
+    args=$(ps -p "$child" -ww -o args= 2>/dev/null || echo "")
+    [[ -z "$args" ]] && continue
+    
+    printf "%s└─ %-6s %s\n" "$indent" "$child" "$args"
+    
+    # Recurse
+    _print_subtree "$child" "   $indent"
+  done
+}
+
+# Show active sub-processes for all agents
+show_processes() {
+  local config_file="$1"
+  local crew_dir=".crew"
+  
+  header "Agent Process Tree"
+  
+  if [[ ! -f "$config_file" ]]; then
+    log_error "No config found. Run 'crew init' first."
+    return 1
+  fi
+  
+  local agents
+  agents=$(config_get ".agents[].name" "" "$config_file")
+  
+  if [[ -z "$agents" ]]; then
+    log_warn "No agents configured"
+    return 0
+  fi
+  
+  for name in $agents; do
+    local pid=""
+    local pid_file="${crew_dir}/run/${name}.pid"
+    
+    if [[ -f "$pid_file" ]]; then
+      pid=$(cat "$pid_file")
+      if ! kill -0 "$pid" 2>/dev/null; then
+        pid=""
+      fi
+    fi
+    
+    if [[ -n "$pid" ]]; then
+      echo -e "${BOLD}${BLUE}● $name${NC} (Watchdog PID: $pid)"
+      _print_subtree "$pid" "  "
+    else
+      echo -e "${RED}○ $name${NC} (Not running)"
+    fi
+    echo ""
+  done
+}

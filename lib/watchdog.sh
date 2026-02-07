@@ -160,7 +160,7 @@ start_agent() {
       echo "[$name] Restarting in ${delay}s..." >> "$log_file"
       sleep "$delay"
     done
-  ) &
+  ) < /dev/null &
 
   local pid=$!
   echo "$pid" > "$pid_file"
@@ -249,6 +249,19 @@ get_agent_status() {
     echo "stale"  # PID file exists but process dead
   else
     echo "stopped"
+  fi
+}
+
+# Get agent PID
+get_agent_pid() {
+  local name="$1"
+  local crew_dir=".crew"
+  local pid_file="$crew_dir/run/${name}.pid"
+  
+  if is_agent_running "$name"; then
+    cat "$pid_file"
+  else
+    return 1
   fi
 }
 

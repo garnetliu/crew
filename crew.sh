@@ -7,6 +7,7 @@
 #   crew stop [AGENT..]  Stop all or specific agents
 #   crew restart [AGENT] Restart agent(s)
 #   crew status          Show agent status
+#   crew ps              Show active agent processes
 #   crew monitor         Real-time dashboard
 #   crew logs AGENT      Tail agent logs
 #   crew validate        Check config syntax
@@ -43,6 +44,7 @@ ${BOLD}COMMANDS${NC}
   stop [AGENT...]      Stop all or specific agents
   restart [AGENT...]   Restart agent(s)
   status               Show agent status
+  ps                   Show active agent processes
   monitor              Real-time dashboard
   logs <AGENT>         Tail agent logs
   validate             Check config syntax
@@ -67,6 +69,9 @@ ${BOLD}EXAMPLES${NC}
 
   # Restart specific agent
   crew restart JANITOR
+
+  # Show active processes
+  crew ps
 
   # Monitor in real-time
   crew monitor
@@ -269,6 +274,16 @@ crew_status() {
   show_status "$CONFIG_FILE"
 }
 
+# Show agent processes
+crew_ps() {
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    log_error "No config found. Run 'crew init' first."
+    return 1
+  fi
+  
+  show_processes "$CONFIG_FILE"
+}
+
 # Monitor mode
 crew_monitor() {
   if [[ ! -f "$CONFIG_FILE" ]]; then
@@ -322,6 +337,9 @@ main() {
       ;;
     status)
       crew_status
+      ;;
+    ps)
+      crew_ps
       ;;
     monitor)
       crew_monitor
