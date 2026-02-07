@@ -60,6 +60,18 @@ Include the following information:
 
 ## Anti-Patterns to Avoid
 
+- **NO "DOCUMENTATION TESTS"**: Do NOT write tests that just list bug properties in a JSON object and `expect(...).toMatchSnapshot()`.
+  - BAD: `expect({ bugId: 'BUG-123', description: '...' }).toMatchSnapshot()`
+  - BAD: These tests always pass and prove nothing.
+  - **GOOD**: Write code that ACTUALLY fails when the bug is present.
+  - IF you cannot reproduce it with a test, document it in `docs/TASKS.md` but DO NOT write a fake test.
+
+- **NO PLACEHOLDER PASSING TESTS**:
+  - BAD: `expect(true).toBe(true)` just to "document" a bug.
+  - BAD: `it.skip(...)` unless it's a flaky test you are actively fixing.
+  - **RULE**: If a test passes while the bug still exists, IT IS A BAD TEST. Delete it.
+  - **RULE**: A test MUST FAIL if the bug is present. If you can't write a failing test, write NO TEST.
+
 - Writing tests that are too brittle (implementation-dependent)
 - Testing trivial code (getters, setters, constants)
 - Duplicating existing test coverage
@@ -67,10 +79,20 @@ Include the following information:
 
 ## Signal Completion
 
-After your work, output:
-```
-QA_COMPLETE: true
-ISSUES_FOUND: [count]
-TESTS_ADDED: [count]
-COVERAGE_CHANGE: [+/-]%
-```
+1. **If you found bugs**:
+   Output:
+   ```
+   QA_COMPLETE: true
+   ISSUES_FOUND: [count]
+   TESTS_ADDED: [count]
+   COVERAGE_CHANGE: [+/-]%
+   ```
+
+2. **If you found NO bugs**:
+   - **DO NOT OUTPUT `QA_COMPLETE: true`**
+   - **CONTINUE SEARCHING**.
+   - Review more files.
+   - Try harder edge cases.
+   - Look for race conditions, security flaws, or performance bottlenecks.
+   - **You are NOT allowed to finish without finding at least one potential issue or improvement.**
+   - If the code is perfect (unlikely), add a "Potential Improvement" or "Refactoring Suggestion" task into `docs/TASKS.md`.

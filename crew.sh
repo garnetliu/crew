@@ -13,8 +13,14 @@
 
 set -euo pipefail
 
-# Get script directory and source libraries
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get script directory (resolve symlinks for install via ~/.local/bin)
+SOURCE="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE" ]]; do
+  DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
 source "$SCRIPT_DIR/lib/utils.sh"
 source "$SCRIPT_DIR/lib/config.sh"
 source "$SCRIPT_DIR/lib/watchdog.sh"
@@ -214,6 +220,9 @@ crew_start() {
       start_agent "$name" "$command" "$CREW_DIR/$prompt_file" "$interval" "$PWD" "$CONFIG_FILE" || true
     done
   fi
+  
+  # Success: clear trap so we don't kill agents on exit
+  trap - EXIT INT TERM
 }
 
 # Stop agents
