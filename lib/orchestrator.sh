@@ -37,7 +37,19 @@ cross_review_loop() {
   # Resolve prompt paths (check local .design first, then crew home)
   writer_prompt=$(resolve_prompt_path "$writer_prompt" "$design_dir")
   reviewer_prompt=$(resolve_prompt_path "$reviewer_prompt" "$design_dir")
-  
+
+  # Validate prompt files exist
+  if [[ ! -f "$writer_prompt" ]]; then
+    log_error "Plan writer prompt not found: $writer_prompt"
+    log_info "Expected at: $design_dir/prompts/plan_writer.md or $(get_crew_home)/prompts/cross-review/plan_writer.md"
+    return 1
+  fi
+  if [[ ! -f "$reviewer_prompt" ]]; then
+    log_error "Reviewer prompt not found: $reviewer_prompt"
+    log_info "Expected at: $design_dir/prompts/reviewer.md or $(get_crew_home)/prompts/cross-review/reviewer.md"
+    return 1
+  fi
+
   # State tracking
   local iter=0
   local stale_count=0

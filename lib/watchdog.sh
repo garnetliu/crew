@@ -12,6 +12,23 @@ DEFAULT_RESTART_DELAY=5
 DEFAULT_MAX_RESTARTS=5
 MAX_BACKOFF_DELAY=300
 GRACEFUL_SHUTDOWN_TIMEOUT=10
+MAX_LOG_SIZE=10485760  # 10MB
+
+# Rotate log file if it exceeds MAX_LOG_SIZE
+rotate_log_if_needed() {
+  local log_file="$1"
+  [[ ! -f "$log_file" ]] && return 0
+
+  local size
+  # macOS uses -f%z, Linux uses -c%s
+  size=$(stat -f%z "$log_file" 2>/dev/null || stat -c%s "$log_file" 2>/dev/null || echo 0)
+
+  if [[ "$size" -gt "$MAX_LOG_SIZE" ]]; then
+    local rotated="${log_file}.$(date +%Y%m%d%H%M%S).bak"
+    mv "$log_file" "$rotated"
+    echo "[log] Rotated to $rotated (was ${size} bytes)" > "$log_file"
+  fi
+}
 
 # Export per-agent env vars from config
 # Usage: export_agent_env <name> <config_file>
@@ -104,6 +121,7 @@ start_agent() {
     local restart_count=0
     local delay="$interval"
     while true; do
+      rotate_log_if_needed "$log_file"
       echo "[$name] Starting at $(timestamp)" >> "$log_file"
       # Run command as array (no eval - prevents arbitrary code execution from config)
       local cmd_array
