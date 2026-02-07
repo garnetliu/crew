@@ -82,6 +82,68 @@ confirm() {
   [[ "$response" =~ ^[Yy]$ ]]
 }
 
+# ── Input Validation ──────────────────────────────────────
+
+# Validate agent name: [A-Za-z0-9_-], max 32 chars
+validate_agent_name() {
+  local name="$1"
+  if [[ -z "$name" ]]; then
+    log_error "Agent name cannot be empty"
+    return 1
+  fi
+  if [[ ${#name} -gt 32 ]]; then
+    log_error "Agent name too long (max 32 chars): $name"
+    return 1
+  fi
+  if [[ ! "$name" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    log_error "Invalid agent name (only [A-Za-z0-9_-] allowed): $name"
+    return 1
+  fi
+}
+
+# Validate file path: reject .., absolute paths, null bytes
+validate_file_path() {
+  local path="$1"
+  if [[ -z "$path" ]]; then
+    log_error "File path cannot be empty"
+    return 1
+  fi
+  if [[ "$path" == /* ]]; then
+    log_error "Absolute paths not allowed: $path"
+    return 1
+  fi
+  if [[ "$path" == *".."* ]]; then
+    log_error "Path traversal not allowed: $path"
+    return 1
+  fi
+  if [[ "$path" == *$'\0'* ]]; then
+    log_error "Null bytes not allowed in path: $path"
+    return 1
+  fi
+}
+
+# Validate interval: positive integer, max 86400 (24h)
+validate_interval() {
+  local value="$1"
+  local max="${2:-86400}"
+  if [[ -z "$value" ]]; then
+    log_error "Interval cannot be empty"
+    return 1
+  fi
+  if [[ ! "$value" =~ ^[0-9]+$ ]]; then
+    log_error "Interval must be a positive integer: $value"
+    return 1
+  fi
+  if [[ "$value" -le 0 ]]; then
+    log_error "Interval must be greater than 0: $value"
+    return 1
+  fi
+  if [[ "$value" -gt "$max" ]]; then
+    log_error "Interval too large (max $max): $value"
+    return 1
+  fi
+}
+
 # Wait with spinner
 wait_with_spinner() {
   local pid=$1

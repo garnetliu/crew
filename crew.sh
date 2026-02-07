@@ -162,16 +162,17 @@ crew_start() {
   else
     # Start specific agents
     for name in "${agents[@]}"; do
+      validate_agent_name "$name" || continue
       local command prompt_file
       command=$(config_get ".agents[] | select(.name == \"$name\") | .command" "" "$CONFIG_FILE")
       prompt_file=$(config_get ".agents[] | select(.name == \"$name\") | .prompt" "" "$CONFIG_FILE")
       interval=$(config_get ".agents[] | select(.name == \"$name\") | .interval" "$DEFAULT_RESTART_DELAY" "$CONFIG_FILE")
-      
+
       if [[ -z "$command" ]]; then
         log_error "[$name] Not found in config"
         continue
       fi
-      
+
       start_agent "$name" "$command" "$CREW_DIR/$prompt_file" "$interval" || true
     done
   fi
@@ -187,6 +188,7 @@ crew_stop() {
     stop_all_agents
   else
     for name in "${agents[@]}"; do
+      validate_agent_name "$name" || continue
       stop_agent "$name"
     done
   fi
@@ -204,6 +206,7 @@ crew_restart() {
     start_all_agents "$CONFIG_FILE"
   else
     for name in "${agents[@]}"; do
+      validate_agent_name "$name" || continue
       restart_agent "$name" "$CONFIG_FILE"
     done
   fi
@@ -237,7 +240,8 @@ crew_logs() {
     log_error "Usage: crew logs <AGENT>"
     return 1
   fi
-  
+
+  validate_agent_name "$name" || return 1
   tail_agent_log "$name"
 }
 

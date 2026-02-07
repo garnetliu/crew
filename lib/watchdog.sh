@@ -17,7 +17,9 @@ start_agent() {
   local interval="${4:-$DEFAULT_RESTART_DELAY}"
   local working_dir="${5:-$PWD}"
   local crew_dir=".crew"
-  
+
+  validate_agent_name "$name" || return 1
+
   ensure_dir "$crew_dir/logs"
   ensure_dir "$crew_dir/run"
   
@@ -182,6 +184,7 @@ start_all_agents() {
   
   while IFS= read -r name; do
     [[ -z "$name" ]] && continue
+    validate_agent_name "$name" || continue
     local command prompt_file interval
     command=$(config_get ".agents[] | select(.name == \"$name\") | .command" "" "$config_file")
     prompt_file=$(config_get ".agents[] | select(.name == \"$name\") | .prompt" "" "$config_file")

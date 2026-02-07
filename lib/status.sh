@@ -94,8 +94,11 @@ tail_agent_log() {
   local name="$1"
   local lines="${2:-50}"
   local crew_dir=".crew"
+
+  validate_agent_name "$name" || return 1
+
   local log_file="$crew_dir/logs/${name}.log"
-  
+
   if [[ ! -f "$log_file" ]]; then
     log_error "No log file for agent: $name"
     return 1
