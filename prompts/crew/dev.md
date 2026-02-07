@@ -119,3 +119,15 @@ TASKS_COMPLETED: [list]
 BUGS_FIXED: [count]
 FILES_MODIFIED: [count]
 ```
+
+# Project Specific Guidelines
+
+<!--
+  Add your project-specific rules here.
+  Examples:
+  - "Always use 'foo' instead of 'bar'"
+  - "Check database migrations in /db/migrations"
+  - "Run specific linter command: npm run lint:custom"
+-->
+
+(No specific guidelines provided yet.)

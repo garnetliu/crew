@@ -101,3 +101,15 @@ FILES_CLEANED: [count]
 DOCS_UPDATED: [count]
 DEPS_UPDATED: [list]
 ```
+
+# Project Specific Guidelines
+
+<!--
+  Add your project-specific rules here.
+  Examples:
+  - "Always use 'foo' instead of 'bar'"
+  - "Check database migrations in /db/migrations"
+  - "Run specific linter command: npm run lint:custom"
+-->
+
+(No specific guidelines provided yet.)

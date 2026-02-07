@@ -146,6 +146,10 @@ agents:
     icon: 🟢
     command: claude --dangerously-skip-permissions
     prompt: prompts/janitor.txt
+    interval: 10
+    timeout: 600
+
+> **Note**: Changes to `crew.yaml` (including `interval` and `env` variables) require a restart of the affected agents to take effect. Run `crew restart [AGENT]` to apply changes.
 ```
 
 ### Files
