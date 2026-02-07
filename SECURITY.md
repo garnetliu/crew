@@ -1,5 +1,13 @@
 # Security Policy
 
+## Disclaimer
+
+This software is provided as-is under the MIT License. AI agents launched by `crew` operate with
+full access to your filesystem and can create, modify, or delete files without confirmation. The
+authors are not responsible for any damage, data loss, or unintended changes caused by agent
+actions. Use in trusted environments only and always review agent prompts and configuration before
+running.
+
 ## Trust Boundaries
 
 `crew` orchestrates AI CLI agents that execute with full access to your codebase and system. Understanding the trust boundaries is critical:

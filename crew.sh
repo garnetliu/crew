@@ -189,6 +189,9 @@ crew_start() {
   }
   trap _crew_cleanup EXIT INT TERM
 
+  log_warn "Agents run with full system access and can modify/delete files."
+  log_warn "Review .crew/crew.yaml and prompts before proceeding."
+
   header "Starting Agents"
 
   if [[ ${#agents[@]} -eq 0 ]]; then

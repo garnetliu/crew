@@ -2,6 +2,11 @@
 
 > Adversarial Multi-Agent Orchestration Tool for AI-assisted development
 
+> **WARNING**: This tool launches AI agents that run with **full access to your codebase and system**.
+> Agents can read, create, modify, and delete files autonomously. By default, agents run with
+> `--dangerously-skip-permissions`, which bypasses all safety prompts. **Review your agent prompts
+> and configuration before running `crew start`.** See [SECURITY.md](SECURITY.md) for details.
+
 ## Overview
 
 `crew` provides two distinct modes for AI agent orchestration:
@@ -192,6 +197,54 @@ crew start QA DEV
 crew monitor
 # Agents run continuously, finding and fixing issues
 crew stop
+```
+
+## Upgrading
+
+If you already have `crew` set up on another project:
+
+### 1. Update crew itself
+
+```bash
+cd ~/dev/crew    # or wherever you cloned crew
+git pull
+./install.sh     # re-creates symlinks, safe to re-run
+```
+
+### 2. Clean up old runtime files
+
+In each project that uses crew:
+
+```bash
+crew stop                        # stop any running agents
+rm -rf .crew/run/                # remove old PID files
+rm -rf .crew/logs/               # remove old logs (optional)
+```
+
+### 3. Update `.crew/crew.yaml`
+
+**Breaking change**: Commands with pipes or shell operators (e.g. `cmd1 | cmd2`)
+no longer work in the `command` field. Use a wrapper script instead.
+
+Before:
+```yaml
+command: ANTHROPIC_MODEL=my-model claude --dangerously-skip-permissions
+```
+
+After:
+```yaml
+command: claude --dangerously-skip-permissions
+env:
+  ANTHROPIC_MODEL: my-model
+```
+
+### 4. Verify
+
+```bash
+crew validate    # check config syntax
+crew start       # test agents start correctly
+crew status      # confirm all running
+crew stop        # clean shutdown
 ```
 
 ## License
