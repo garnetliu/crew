@@ -95,7 +95,7 @@ Termination conditions:
 
 ## Coding Conventions
 
-- **Shell**: Bash 4+, strict mode (`set -e`)
+- **Shell**: Bash 4+, strict mode (`set -euo pipefail`)
 - **Functions**: `snake_case` (e.g., `start_agent`, `cross_review_loop`)
 - **Variables**: `UPPER_CASE` for constants, `lower_case` for locals
 - **Logging**: Use `log_info`, `log_ok`, `log_warn`, `log_error`
@@ -106,6 +106,8 @@ Termination conditions:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CREW_AGENT` | `claude` | Override agent type (claude, opencode, gemini) |
+| `ANTHROPIC_BASE_URL` | (none) | Override API endpoint for Claude CLI |
+| `ANTHROPIC_MODEL` | (none) | Override model for Claude CLI |
 | `DEBUG` | unset | Set to `1` for verbose debug output |
 
 ## Exit Codes
