@@ -33,6 +33,27 @@ export_agent_env() {
   done <<< "$env_keys"
 }
 
+# Acquire lock on PID file (non-blocking)
+# Uses flock if available, otherwise proceeds without locking (best effort)
+acquire_pid_lock() {
+  local pid_file="$1"
+  local lock_file="${pid_file}.lock"
+  if command_exists flock; then
+    exec 200>"$lock_file"
+    flock -n 200 || return 1
+  fi
+}
+
+# Release PID lock
+release_pid_lock() {
+  local pid_file="$1"
+  local lock_file="${pid_file}.lock"
+  if command_exists flock; then
+    flock -u 200 2>/dev/null || true
+  fi
+  rm -f "$lock_file"
+}
+
 # Start an agent in background with monitoring
 start_agent() {
   local name="$1"
@@ -51,9 +72,16 @@ start_agent() {
   local log_file="$crew_dir/logs/${name}.log"
   local pid_file="$crew_dir/run/${name}.pid"
 
+  # Lock PID file to prevent race conditions
+  if ! acquire_pid_lock "$pid_file"; then
+    log_warn "[$name] Could not acquire lock (another operation in progress)"
+    return 1
+  fi
+
   # Check if already running
   if is_agent_running "$name"; then
     log_warn "[$name] Already running (PID: $(cat "$pid_file"))"
+    release_pid_lock "$pid_file"
     return 1
   fi
 
@@ -62,6 +90,7 @@ start_agent() {
   # Validate prompt file
   if [[ ! -f "$prompt_file" ]]; then
     log_error "[$name] Prompt file not found: $prompt_file"
+    release_pid_lock "$pid_file"
     return 1
   fi
 
@@ -116,6 +145,7 @@ start_agent() {
 
   local pid=$!
   echo "$pid" > "$pid_file"
+  release_pid_lock "$pid_file"
 
   log_ok "[$name] Started (PID: $pid)"
   log_info "[$name] Log: $log_file"
@@ -126,20 +156,26 @@ stop_agent() {
   local name="$1"
   local crew_dir=".crew"
   local pid_file="$crew_dir/run/${name}.pid"
-  
+
   if [[ ! -f "$pid_file" ]]; then
     log_warn "[$name] Not running (no PID file)"
     return 0
   fi
-  
+
+  # Lock PID file to prevent race conditions
+  if ! acquire_pid_lock "$pid_file"; then
+    log_warn "[$name] Could not acquire lock (another operation in progress)"
+    return 1
+  fi
+
   local pid
   pid=$(cat "$pid_file")
-  
+
   log_info "[$name] Stopping (PID: $pid)..."
-  
+
   # Remove PID file first (signals the loop to stop)
   rm -f "$pid_file"
-  
+
   # Send SIGTERM for graceful shutdown
   if kill -TERM "$pid" 2>/dev/null; then
     # Wait for graceful exit
@@ -148,7 +184,7 @@ stop_agent() {
       sleep 1
       wait_count=$((wait_count + 1))
     done
-    
+
     # Force kill if still alive
     if kill -0 "$pid" 2>/dev/null; then
       kill -9 "$pid" 2>/dev/null
@@ -159,6 +195,8 @@ stop_agent() {
   else
     log_warn "[$name] Process not found (already stopped)"
   fi
+
+  release_pid_lock "$pid_file"
 }
 
 # Check if agent is running
@@ -261,6 +299,9 @@ stop_all_agents() {
       stop_agent "$name"
     fi
   done
+
+  # Clean up stale lock files
+  rm -f "$crew_dir/run"/*.lock 2>/dev/null || true
 }
 
 # Watchdog loop - monitor and restart agents
