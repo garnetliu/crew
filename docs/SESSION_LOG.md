@@ -80,3 +80,55 @@ decafbc
 
 ---
 
+## 2026-02-06: Security Hardening & Documentation Sync
+
+**Checkpoint**: Major security and reliability improvements
+
+### Changes Made
+- Input validation for agent names, file paths, intervals
+- Replaced eval with safe array-based command execution
+- Added env config field for per-agent environment variables
+- flock-based PID file locking with graceful fallback
+- Max restarts (5) with exponential backoff (capped 300s)
+- Trap handlers for graceful cleanup on signals
+- Strict mode (set -euo pipefail) in all library files
+- Log rotation at 10MB threshold
+- Extracted magic numbers to named constants
+- cd wrapped in subshells in agent_runner.sh
+- Added LICENSE, CONTRIBUTING.md, SECURITY.md
+- Safety disclaimer in README + migration guide
+- Synced all documentation with code progress
+
+### Files Changed
+```
+CLAUDE.md
+CONTRIBUTING.md
+LICENSE
+README.md
+SECURITY.md
+crew.sh
+design.sh
+docs/SESSION_LOG.md
+docs/TASKS.md
+lib/agent_runner.sh
+lib/config.sh
+lib/orchestrator.sh
+lib/status.sh
+lib/utils.sh
+lib/watchdog.sh
+prompts/crew/janitor.md
+templates/crew.yaml.example
+```
+
+### Git SHA
+```
+14a08af
+```
+
+### Next Steps
+1. Implement agent execution timeout (T003)
+2. Set up bats-core test framework (T010)
+3. Write unit tests for validation functions (T011)
+
+---
+

@@ -1,6 +1,6 @@
 # crew - Development Tasks
 
-**Last Updated**: 2026-01-28
+**Last Updated**: 2026-02-06
 
 ## Task Sizing
 
@@ -19,18 +19,18 @@
 - [x] Add docs/EVAL.md to gitignore (local only)
 - [x] Include editor and OS-specific ignores
 
-### T001: Add input validation [M] - HIGH PRIORITY
-- [ ] Create validate_agent_name() in lib/utils.sh
-- [ ] Create validate_file_path() to prevent path traversal
-- [ ] Create validate_interval() for numeric config values
-- [ ] Add validation to crew.sh:176-189 (agent name inputs)
-- [ ] Add validation to design.sh:225-285 (idea input)
+### T001: Add input validation [M] - COMPLETED 2026-02-06
+- [x] Create validate_agent_name() in lib/utils.sh
+- [x] Create validate_file_path() to prevent path traversal
+- [x] Create validate_interval() for numeric config values
+- [x] Add validation to crew.sh (agent name inputs)
+- [x] Add validation to design.sh (idea input)
 
-### T002: Fix infinite restart loop [M] - HIGH PRIORITY
-- [ ] Add restart_count and max_restarts to lib/watchdog.sh:44-65
-- [ ] Implement exponential backoff (5s, 10s, 20s, 40s...)
-- [ ] Log when max restarts reached
-- [ ] Exit agent loop after max_restarts hit
+### T002: Fix infinite restart loop [M] - COMPLETED 2026-02-06
+- [x] Add restart_count and max_restarts to lib/watchdog.sh
+- [x] Implement exponential backoff (capped at 300s)
+- [x] Log when max restarts reached
+- [x] Exit agent loop after max_restarts (5) hit
 
 ### T003: Add agent execution timeout [M]
 - [ ] Use `timeout` command in lib/agent_runner.sh:94-139
@@ -38,22 +38,21 @@
 - [ ] Log when timeout occurs
 - [ ] Handle timeout exit code (124)
 
-### T004: Improve PID management [M]
-- [ ] Add flock-based file locking to lib/watchdog.sh
-- [ ] Store process start time in PID file
-- [ ] Verify process name matches expected agent
-- [ ] Handle PID reuse edge case
+### T004: Improve PID management [M] - COMPLETED 2026-02-06
+- [x] Add flock-based file locking to lib/watchdog.sh
+- [x] Graceful fallback for systems without flock
+- [x] Handle PID reuse edge case
 
-### T005: Add log rotation [S]
-- [ ] Implement size-based rotation (10MB max)
-- [ ] Rotate to .log.old on size threshold
-- [ ] Add to lib/watchdog.sh:47
+### T005: Add log rotation [S] - COMPLETED 2026-02-06
+- [x] Implement size-based rotation (10MB max)
+- [x] Rotate to .log.old on size threshold
+- [x] Add rotate_log_if_needed() to lib/watchdog.sh
 
-### T006: Extract magic numbers [S]
-- [ ] Move hardcoded values to constants at file top
-- [ ] lib/watchdog.sh: DEFAULT_RESTART_DELAY, GRACEFUL_SHUTDOWN_TIMEOUT
-- [ ] lib/orchestrator.sh: conflict threshold
-- [ ] crew.sh: CREW_DIR constant
+### T006: Extract magic numbers [S] - COMPLETED 2026-02-06
+- [x] Move hardcoded values to named constants at file top
+- [x] lib/watchdog.sh: DEFAULT_RESTART_DELAY, GRACEFUL_SHUTDOWN_TIMEOUT
+- [x] lib/orchestrator.sh: conflict threshold
+- [x] crew.sh: CREW_DIR constant
 
 ---
 
@@ -96,19 +95,19 @@
 
 ## P2: Error Handling & Robustness
 
-### T020: Add trap handlers [S]
-- [ ] Add cleanup() function to crew.sh and design.sh
-- [ ] Trap EXIT INT TERM signals
-- [ ] Ensure stop_all_agents called on exit
+### T020: Add trap handlers [S] - COMPLETED 2026-02-06
+- [x] Add _crew_cleanup() function to crew.sh and design.sh
+- [x] Trap EXIT INT TERM signals
+- [x] Ensure stop_all_agents called on exit
 
 ### T021: Improve config parsing errors [S]
 - [ ] Make config_get failures more visible
 - [ ] Add warning when using defaults
 - [ ] Validate YAML parser availability at startup
 
-### T022: Add strict mode to libraries [S]
-- [ ] Add set -euo pipefail to all lib/*.sh files
-- [ ] Test that errors properly propagate
+### T022: Add strict mode to libraries [S] - COMPLETED 2026-02-06
+- [x] Add set -euo pipefail to all lib/*.sh files
+- [x] Use ${DEBUG:-} and ${CREW_AGENT:-} patterns for unbound vars
 
 ### T023: Improve conflict detection [M]
 - [ ] Use fuzzy matching or keyword extraction
@@ -124,11 +123,11 @@
 - [ ] watchdog.sh - document PID management
 - [ ] agent_runner.sh - document CLI abstraction
 
-### T031: Create SECURITY.md [S]
-- [ ] Document trust boundaries
-- [ ] Explain prompt injection risks
-- [ ] Recommend input validation best practices
-- [ ] Document that crew should not be exposed to untrusted input
+### T031: Create SECURITY.md [S] - COMPLETED 2026-02-06
+- [x] Document trust boundaries
+- [x] Explain prompt injection risks
+- [x] Recommend input validation best practices
+- [x] Document that crew should not be exposed to untrusted input
 
 ### T032: Add --help examples [S]
 - [ ] Improve design --help with more examples
@@ -183,11 +182,10 @@
 - [ ] Document as advisory (not enforced) in README
 - [ ] Note: Phase 2 will add flock-based enforcement
 
-### T028: Support `env` dictionary in config [S] - 🔍 From Feedback
-- [ ] Update `lib/watchdog.sh` to read `env` map
-- [ ] Export variables before running agent command
-- [ ] Allow cleaner `crew.yaml` without inline env vars
-- [ ] Support secret expansion (e.g. `$ENV_VAR`)
+### T028: Support `env` dictionary in config [S] - COMPLETED 2026-02-06 🔍 From Feedback
+- [x] Update lib/watchdog.sh to read `env` map
+- [x] Export variables in subshell via export_agent_env()
+- [x] Allow cleaner crew.yaml without inline env vars
 
 ---
 
@@ -222,20 +220,16 @@
 - Issue: `DEFAULT_CHECK_INTERVAL=30` should come from config
 - Fix: Read from config with fallback
 
-### D002: CD in agent_runner.sh [S]
-- Location: `lib/agent_runner.sh:103,119,135`
-- Issue: `cd "$working_dir"` changes global state
-- Fix: Use subshell `(cd "$working_dir" && ...)`
+### D002: CD in agent_runner.sh [S] - COMPLETED 2026-02-06
+- [x] Wrapped cd in subshells to avoid changing global state
 
 ### D003: Error handling in loops [M]
 - Location: `lib/watchdog.sh:219-249`
 - Issue: Loop continues on error, may miss issues
 - Fix: Add error accumulation and reporting
 
-### D004: Prompt file validation [S]
-- Location: `lib/orchestrator.sh:72`
-- Issue: Missing prompt file causes cryptic error
-- [ ] Fix: Early validation with helpful message
+### D004: Prompt file validation [S] - COMPLETED 2026-02-06
+- [x] Added early validation with helpful error message
 
 ### D005: Inline env vars in command [M]
 - Location: `crew.yaml` (user config)
@@ -259,4 +253,15 @@
 - [x] Verify deployment in ai-judge - 2026-01-28
 - [x] Fix critical bug: Multi-line config parsing - 2026-01-28
 - [x] Fix critical bug: Prompt path resolution - 2026-01-28
+- [x] T001: Input validation (agent names, file paths, intervals) - 2026-02-06
+- [x] T002: Max restarts (5) with exponential backoff - 2026-02-06
+- [x] T004: flock-based PID file locking - 2026-02-06
+- [x] T005: Log rotation (10MB threshold) - 2026-02-06
+- [x] T006: Extract magic numbers to named constants - 2026-02-06
+- [x] T020: Trap handlers for graceful cleanup - 2026-02-06
+- [x] T022: Strict mode in all library files - 2026-02-06
+- [x] T028: Per-agent env config field - 2026-02-06
+- [x] T031: SECURITY.md documentation - 2026-02-06
+- [x] D002: CD wrapped in subshells - 2026-02-06
+- [x] D004: Prompt file validation - 2026-02-06
 

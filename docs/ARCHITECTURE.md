@@ -1,7 +1,7 @@
 # crew - Architecture Document
 
 **Version**: 0.1.0
-**Last Updated**: 2026-01-28
+**Last Updated**: 2026-02-06
 
 ---
 
@@ -234,6 +234,9 @@ lib/
 ├── crew.sh                    # Crew mode entry
 ├── design.sh                  # Design mode entry
 ├── install.sh                 # Installation script
+├── CONTRIBUTING.md            # Contribution guidelines
+├── LICENSE                    # MIT license
+├── SECURITY.md                # Security policy
 ├── lib/
 │   ├── utils.sh
 │   ├── config.sh
@@ -242,6 +245,10 @@ lib/
 │   ├── agent_runner.sh
 │   └── status.sh
 ├── prompts/
+│   ├── crew/
+│   │   ├── qa.md              # QA agent prompt
+│   │   ├── dev.md             # DEV agent prompt
+│   │   └── janitor.md         # JANITOR agent prompt
 │   └── cross-review/
 │       ├── plan_writer.md     # Default Writer prompt
 │       └── reviewer.md        # Default Reviewer prompt
@@ -333,12 +340,17 @@ get_agent_status():
     if PID file does not exist:
         return "stopped"
 
+    # flock-based locking (with graceful fallback if flock unavailable)
+    acquire_lock(pid_file)
+
     pid = read PID file
 
     if kill -0 $pid succeeds:
         return "running:$pid"
     else:
         return "stale"  # PID file exists but process dead
+
+    release_lock(pid_file)
 ```
 
 ### 5.3 Graceful Shutdown
@@ -397,6 +409,11 @@ Environment variables take precedence:
 
 ## 7. Security Considerations
 
+- **No eval**: Commands from YAML config use `read -ra` array execution instead of `eval`
+- **Input validation**: `validate_agent_name()`, `validate_file_path()`, `validate_interval()` in lib/utils.sh
+- **PID file locking**: flock-based locking with graceful fallback for systems without flock
+- **Strict mode**: All lib/*.sh files use `set -euo pipefail`
+- **Per-agent env vars**: `env` config field exported in subshell via `export_agent_env()`
 - **Prompt injection**: User prompts are passed to AI CLIs; validate if exposing to untrusted input
 - **File permissions**: PID/log files created with user's default umask
 - **Process isolation**: Agents run as subprocesses with inherited permissions

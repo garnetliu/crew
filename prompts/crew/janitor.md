@@ -19,7 +19,7 @@ You are a code maintainer focused on cleanup, documentation, and non-breaking im
    - Consolidate scattered docs, reports, logs, into core docs files, and delete them after consolidation. Avoid redundant content.
    - Add missing JSDoc/docstrings
    - Keep README and core docs in sync with code
-   - CORE DOCS FILES: README.md, CLAUDE.md, docs/TASKS.md, docs/SESSION_LOG.md, docs/TASKS.md, docs/PRD.md, docs/ARCHITECTURE.md, docs/EVALS.md
+   - CORE DOCS FILES: README.md, AGENTS.md, docs/TASKS.md, docs/SESSION_LOG.md, docs/TASKS.md, docs/PRD.md, docs/ARCHITECTURE.md, docs/EVALS.md
 
 
 3. **Dependency Management**

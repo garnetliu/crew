@@ -31,8 +31,27 @@ export PATH="$HOME/.local/bin:$PATH"
 ```
 
 Requires:
+- Bash 4+
 - `yq` for YAML parsing: `brew install yq`
 - An AI CLI: `claude`, `opencode`, or `gemini`
+
+Supported platforms:
+- **macOS** (primary, actively developed)
+- **Linux** (tested)
+- **Windows WSL** (untested, should work)
+
+## First-time Setup Security Checklist
+
+Before running `crew start`, verify the following:
+
+- [ ] **Git clean state** — commit or stash all work; agents will modify files
+- [ ] **Review prompts** — read every file in `.crew/prompts/` before agents use them
+- [ ] **Review `crew.yaml`** — confirm each agent's `command` and `env` fields look correct
+- [ ] **No secrets in config** — API keys go in shell env (`export ANTHROPIC_API_KEY=...`), never in `crew.yaml`
+- [ ] **`.gitignore` covers runtime files** — `.crew/logs/`, `.crew/run/` should be ignored
+- [ ] **Understand `--dangerously-skip-permissions`** — agents bypass all safety prompts and can read/write/delete any file
+
+> **Tip**: Run `crew validate` to check config syntax before starting agents.
 
 ## `design` - Cross-Review Mode
 
@@ -90,7 +109,7 @@ crew init
 crew start
 
 # Start specific agents
-crew start QA DEV
+crew start QA DEV JANITOR
 
 # Monitor real-time
 crew monitor
@@ -122,6 +141,11 @@ agents:
     icon: 🔵
     command: claude --dangerously-skip-permissions
     prompt: prompts/dev.txt
+
+  - name: JANITOR
+    icon: 🟢
+    command: claude --dangerously-skip-permissions
+    prompt: prompts/janitor.txt
 ```
 
 ### Files
@@ -193,7 +217,7 @@ design review --max-iter 3
 cd ~/dev/my-app
 crew init
 # Edit .crew/crew.yaml and prompts
-crew start QA DEV
+crew start QA DEV JANITOR
 crew monitor
 # Agents run continuously, finding and fixing issues
 crew stop

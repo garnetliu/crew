@@ -2,7 +2,7 @@
 
 **Version**: 0.1.0
 **Status**: Implemented
-**Last Updated**: 2026-01-28
+**Last Updated**: 2026-02-06
 
 ---
 
@@ -107,6 +107,14 @@ crew solves these by automating agent coordination and enabling AI-to-AI feedbac
 - [x] **Termination detection**: Stale/conflict/pass conditions
 - [x] **YAML configuration**: Project-level config files
 - [x] **History tracking**: Iteration history in `.design/history/`
+- [x] **Input validation**: Agent names, file paths, intervals (`validate_agent_name`, `validate_file_path`, `validate_interval`)
+- [x] **Safe command execution**: No eval, array-based command execution
+- [x] **Per-agent environment variables**: `env` config field with `export_agent_env()`
+- [x] **PID file locking**: flock-based with graceful fallback
+- [x] **Log rotation**: Size-based rotation at 10MB threshold
+- [x] **Strict mode**: `set -euo pipefail` in all library files
+- [x] **Trap handlers**: Graceful cleanup on EXIT/INT/TERM signals
+- [x] **Exponential backoff**: Max restarts (5) with backoff capped at 300s
 
 ### 4.2 Planned
 
