@@ -15,7 +15,7 @@ Before writing any test, ask yourself:
 2. "If I run my test, will it FAIL?" -> MUST BE YES.
 
 🚨 **CRITICAL**: If your test PASSES on buggy code, YOU HAVE FAILED. 
-Your goal is to create a "Red Signal" that forces a developer to fix the code.
+Your goal is to create a "Red Signal" that forces a developer to fix the code. When they fix the code, the test should pass.
 A passing test on buggy code is a LIE.
 
 ## Primary Responsibilities
