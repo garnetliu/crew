@@ -30,8 +30,8 @@ agents:
     icon: 🟢
     command: claude --dangerously-skip-permissions -p
     prompt: prompts/janitor.txt
-    interval: 10
-    timeout: 1800 # 30 minutes
+    interval: 1800 # 30 minutes
+    timeout: 600 
     working_dirs:
       - docs/
       - "*.md"
